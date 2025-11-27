@@ -1,72 +1,60 @@
 import streamlit as st
+import pandas as pd
+import plotly.express as px
+import random
+import time
 
-def get_divisors(number):
-    """
-    입력된 숫자의 약수를 찾아 리스트로 반환하는 함수
-    """
-    if number <= 0:
-        return []
-        
-    divisors = []
-    # 1부터 number의 제곱근까지 반복
-    for i in range(1, int(number**0.5) + 1):
-        if number % i == 0:
-            divisors.append(i)
-            # i가 number의 제곱근이 아니라면, 몫(number // i)도 약수임
-            if i * i != number:
-                divisors.append(number // i)
-                
-    # 약수를 오름차순으로 정렬
-    divisors.sort()
-    return divisors
-
-## --- Streamlit UI 구성 ---
-
-st.title("🔢 약수 찾기 웹 앱")
-st.markdown("숫자를 입력하면 해당 숫자의 모든 약수를 찾아 드립니다.")
-
-# 사용자로부터 숫자 입력 받기
-number_input = st.number_input(
-    "양의 정수를 입력하세요:", 
-    min_value=1, 
-    value=100, 
-    step=1,
-    format="%d"
+# 페이지 기본 설정
+st.set_page_config(
+    page_title="행운의 룰렛",
+    page_icon="🎡",
+    layout="centered"
 )
 
-# 입력된 숫자가 유효한 정수인지 확인
-if number_input is not None and number_input >= 1:
-    try:
-        # number_input은 float으로 반환될 수 있으므로 정수로 변환
-        number = int(number_input)
-        
-        # 약수 계산
-        divisors_list = get_divisors(number)
-        
-        st.subheader(f"✨ 입력된 숫자: **{number}**")
-        
-        if divisors_list:
-            st.success(f"**{number}**의 약수 개수: **{len(divisors_list)}**개")
-            
-            # 결과를 보기 좋게 출력
-            st.markdown("### 📝 약수 목록")
-            # 쉼표로 구분하여 문자열로 만들고 출력
-            divisors_str = ", ".join(map(str, divisors_list))
-            st.code(divisors_str)
-            
-            # 참고: 리스트 형태로도 보여줄 수 있습니다.
-            # st.write(divisors_list)
-            
-        else:
-            # 이 경우는 number_input의 min_value 때문에 사실상 도달하기 어려움
-            st.warning("유효한 양의 정수를 입력해 주세요.")
-            
-    except ValueError:
-        st.error("숫자 입력이 잘못되었습니다. 정수를 입력해 주세요.")
+# 제목 및 설명
+st.title("🎡 행운의 룰렛 돌리기")
+st.markdown("입력창에 후보들을 넣고 **'돌리기'** 버튼을 눌러주세요!")
 
-st.markdown(
-    """
-    ---
-    *Streamlit Cloud 배포용*
-    """
+# 1. 사이드바 또는 메인 화면에서 데이터 입력 받기
+st.subheader("1. 후보 입력")
+default_items = "짜장면\n짬뽕\n탕수육\n볶음밥\n돈까스"
+items_input = st.text_area(
+    "줄바꿈(Enter)으로 항목을 구분해주세요.",
+    value=default_items,
+    height=150
 )
+
+# 입력된 텍스트를 리스트로 변환
+items = [item.strip() for item in items_input.split('\n') if item.strip()]
+
+if items:
+    # 2. 룰렛 시각화 (Plotly Pie Chart 사용)
+    st.subheader("2. 룰렛 미리보기")
+    
+    # 데이터프레임 생성 (모든 항목의 크기를 1로 설정하여 균등하게 분할)
+    df = pd.DataFrame({
+        '항목': items,
+        '비중': [1] * len(items)
+    })
+    
+    # 파이 차트 그리기
+    fig = px.pie(df, values='비중', names='항목', title='행운의 룰렛')
+    fig.update_traces(textinfo='label+percent', textposition='inside')
+    fig.update_layout(showlegend=False)
+    
+    st.plotly_chart(fig, use_container_width=True)
+
+    # 3. 돌리기 버튼 및 결과 출력
+    if st.button("룰렛 돌리기! 🎲", type="primary"):
+        with st.spinner('두구두구두구... 룰렛이 돌아갑니다! 🎡'):
+            time.sleep(2)  # 긴장감을 위한 2초 대기
+        
+        # 랜덤 선택
+        winner = random.choice(items)
+        
+        st.balloons()  # 풍선 효과
+        st.success(f"🎉 축하합니다! 당첨 결과는 **[{winner}]** 입니다! 🎉")
+        st.snow()      # 눈 내리는 효과 (추가 축하)
+
+else:
+    st.warning("룰렛에 넣을 내용을 입력해주세요.")
